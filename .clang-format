@@ -1,0 +1,13 @@
+# clang-format configuration for bpe.
+# Requires clang-format >= 20 (BinPackParameters: OnePerLine).
+# Format everything: clang-format -i src/*.{h,cpp} tests/*.cpp examples/coordinator/*.{h,cpp}
+---
+Language: Cpp
+BasedOnStyle: Google
+Standard: c++17
+
+# Layout
+ColumnLimit: 120
+## Namespaces
+NamespaceIndentation: All
+BinPackArguments: false

@@ -1,0 +1,27 @@
+#pragma once
+
+// The process this coordinator runs, parsed at boot.
+constexpr char PROCESS_JSON[] = R"json({
+  "version": "1.0",
+  "process": {
+    "id": "temperature-monitor",
+    "nodes": [
+      { "id": "start", "type": "Start" },
+      { "id": "temperature", "type": "ExternalTask", "externalTaskType": "measure_temperature", "resultVariable": "temperature" },
+      { "id": "wait", "type": "InternalTask", "internalTaskType": "Delay", "delayMs": 2000 },
+      { "id": "count", "type": "InternalTask", "internalTaskType": "Increment",
+        "variable": "count", "increment": 1 },
+      { "id": "router", "type": "Router" },
+      { "id": "stop", "type": "Stop" }
+    ],
+    "routes": [
+      { "from": "start", "to": "temperature" },
+      { "from": "temperature", "to": "wait" },
+      { "from": "wait", "to": "count" },
+      { "from": "count", "to": "router" },
+      { "from": "router", "to": "temperature",
+        "condition": { "variable": "count", "op": "<", "value": 3 } },
+      { "from": "router", "to": "stop" }
+    ]
+  }
+})json";

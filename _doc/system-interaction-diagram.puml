@@ -1,0 +1,55 @@
+@startuml system-interaction-diagram
+' Coordinator system interaction diagram.
+' Five components and the messages that cross between them.
+
+title Coordinator system interaction
+
+skinparam componentStyle rectangle
+skinparam shadowing true
+skinparam defaultFontSize 12
+skinparam ArrowFontSize 11
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 80
+
+rectangle "Worker Rasp-zero (one or more)" as workerNode {
+  card "Worker\n<size:10>worker.py</size>\n<size:10>ws connection | work execution </size>" as Worker
+}
+
+rectangle "Browser\n(phone / laptop)" as browserNode {
+  card "Browser\n<size:10>root_page.h (html)</size>\n<size:10>command | view</size>" as Browser
+}
+
+rectangle "Coordinator ESP32" as coord {
+  card "                         Web Socket                      \n<size:10>web_socket.cpp</size>\n<size:10>listener | sender</size>" as WS
+  card "          Task Dispatcher          \n<size:10>task_dispatcher.cpp</size>\n<size:10>execution | result</size>" as Disp
+  card "          Dashboard                \n<size:10>dashboard.cpp</size>\n<size:10>command | view</size>" as Dash
+  card "          Engine                   \n<size:10>engine.cpp | process.cpp | process_data.h</size>\n<size:10>execution | parse json process</size>" as Engine #EEEEEE
+}
+
+' --- Worker <-> Web Socket ---
+Worker --> WS : register:\n{worker_id, capabilities[]}\ntask_result:\n{task_id, status, result}
+Worker <-- WS : task:\n{task_id, name}\ncancel_task:\n{task_id}
+
+' --- Browser <-> Web Socket ---
+Browser --> WS :   COMMANDS:   \nstart_process\n stop_process\n run_task
+Browser <-- WS : snapshot (on connect)\nstate {workers[]}\nresponse {ok, errors[]}\nexecution_status\nnode_status\nvariables  event
+
+' --- Web Socket <-> Task Dispatcher ---
+WS ..> Disp : CONNECTED\nTEXT: register, task_result,\nrun_task, start/stop_process\nDISCONNECTED
+WS <.. Disp : sendText to one client: task, cancel_task, response\nbroadcast to browsers: state
+
+' --- Web Socket <-> Dashboard ---
+WS ..> Dash : CONNECTED
+WS <.. Dash : snapshot\status
+
+' Layout: Dashboard on the same layer as Task Dispatcher, to its right.
+Disp -[hidden]right- Dash
+
+' --- Engine (internal, not one of the five) ---
+' Written as "X <.. Engine" so Engine is ranked below Disp and Dash.
+Disp <.. Engine : send / cancel external task
+Disp ..> Engine : onTaskResult, start / stop
+Dash <.. Engine : observer events: processStarted,\nnodeActivated, variableSet,\nprocessFinished, log
+
+@enduml

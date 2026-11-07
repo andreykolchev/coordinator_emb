@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "process": {
+    "id": "environment-monitor",
+    "nodes": [
+      { "id": "start", "type": "Start" },
+      { "id": "wait-start", "type": "InternalTask", "internalTaskType": "Delay", "delayMs": 2000 },
+      { "id": "fork", "type": "Fork" },
+      { "id": "temperature", "type": "ExternalTask", "externalTaskType": "measure_temperature", "resultVariable": "temperature" },
+      { "id": "humidity", "type": "ExternalTask", "externalTaskType": "measure_humidity", "resultVariable": "humidity" },
+      { "id": "temperature-2", "type": "ExternalTask", "externalTaskType": "measure_temperature", "resultVariable": "temperature2" },
+      { "id": "wait-humidity", "type": "InternalTask", "internalTaskType": "Delay", "delayMs": 2000 },
+      { "id": "join", "type": "Join" },
+      { "id": "ac-calc", "type": "InternalTask", "internalTaskType": "Service", "method": "calc_ac",
+        "context": {
+          "temps": ["$temperature.temperature_c", "$temperature2.temperature_c"],
+          "humidity": "$humidity.humidity_rh",
+          "tLim": 30,
+          "hLim": 70
+        },
+        "resultVariable": "ac" },
+      { "id": "ac-router", "type": "Router" },
+      { "id": "ac-off", "type": "ExternalTask", "externalTaskType": "ac_off" },
+      { "id": "ac-on", "type": "ExternalTask", "externalTaskType": "ac_on" },
+      { "id": "count", "type": "InternalTask", "internalTaskType": "Increment",
+        "variable": "iteration", "increment": 1 },
+      { "id": "router", "type": "Router" },
+      { "id": "stop", "type": "Stop" }
+    ],
+    "routes": [
+      { "from": "start", "to": "wait-start" },
+      { "from": "wait-start", "to": "fork" },
+      { "from": "fork", "to": "temperature" },
+      { "from": "fork", "to": "humidity" },
+      { "from": "fork", "to": "temperature-2" },
+      { "from": "temperature", "to": "join" },
+      { "from": "humidity", "to": "wait-humidity" },
+      { "from": "wait-humidity", "to": "join" },
+      { "from": "temperature-2", "to": "join" },
+      { "from": "join", "to": "ac-calc" },
+      { "from": "ac-calc", "to": "ac-router" },
+      { "from": "ac-router", "to": "ac-on",
+        "condition": { "variable": "ac", "op": "==", "value": true } },
+      { "from": "ac-router", "to": "ac-off" },
+      { "from": "ac-on", "to": "count" },
+      { "from": "ac-off", "to": "count" },
+      { "from": "count", "to": "router" },
+      { "from": "router", "to": "wait-start",
+        "condition": { "variable": "iteration", "op": "<", "value": 5 } },
+      { "from": "router", "to": "stop" }
+    ]
+  }
+}
