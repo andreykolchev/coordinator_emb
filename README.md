@@ -7,3 +7,5 @@ ESP32 process coordinator. The ESP32 runs its own WiFi access point, executes JS
 - **Coordinator** (`src/`) — PlatformIO, Arduino framework, `esp32dev`. Build and flash: `pio run -t upload`.
 - **Worker** (`_doc/worker/worker.py`) — Python worker that registers its capabilities and executes tasks.
 - **Dashboard** — join the `ESP32-Process-Network` WiFi and open http://192.168.4.1 (WebSocket on port 81). Settings in `src/config.h`.
+
+![Dashboard](_doc/dashboard.png)
